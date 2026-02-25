@@ -43,6 +43,7 @@ else:
 
 MAX_SPEC = 'Max Spec'
 MIN_SPEC = 'Min Spec'
+MEDIAN_SPEC = 'Median Spec'
 LIN_ENSE = 'Linear Ensemble'
 
 MAX_WAV = MAX_SPEC
@@ -568,6 +569,9 @@ def ensemble_inputs(audio_input, algorithm, is_normalization, wav_type_set, save
     if algorithm == AVERAGE:
         output = average_audio(audio_input)
         samplerate = 44100
+    elif algorithm == MEDIAN_SPEC:
+        output = median_audio(audio_input)
+        samplerate = 44100
     else:
         specs = []
         
@@ -773,6 +777,28 @@ def average_audio(audio):
 
     return waves
     
+def median_audio(audio):
+    """Compute the element-wise median of multiple audio files (waveform domain)."""
+    
+    waves = []
+    wave_shapes = []
+
+    for i in range(len(audio)):
+        wave = librosa.load(audio[i], sr=44100, mono=False)
+        waves.append(wave[0])
+        wave_shapes.append(wave[0].shape[1])
+
+    wave_shapes_index = wave_shapes.index(max(wave_shapes))
+    target_shape = waves[wave_shapes_index]
+
+    final_waves = []
+    for n_array in waves:
+        wav_target = to_shape(n_array, target_shape.shape)
+        final_waves.append(wav_target)
+
+    waves_array = np.stack(final_waves, axis=0)
+    return np.median(waves_array, axis=0)
+
 def average_dual_sources(wav_1, wav_2, value):
     
     if wav_1.shape > wav_2.shape:
